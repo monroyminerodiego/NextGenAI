@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 10000
 
 # Comando para correr la app
-CMD ["gunicorn", "-w", "4", "-k", "gevent", "--bind", "0.0.0.0:10000", "--log-file", "-", "app:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:10000", "app:app"]
