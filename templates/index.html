@@ -1,179 +1,831 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Activity A07 - D3.js Reports Stream Data</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiStream Analytics - Visualización en Tiempo Real</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        * {
             margin: 0;
             padding: 0;
-            background: linear-gradient(to bottom right, #f0f0f0, #dfefff);
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
+            overflow-x: hidden;
         }
 
-        h1 {
-            font-size: 2.8rem;
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
             text-align: center;
-            padding: 40px 20px 10px;
-            color: #1f3a93;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-            background-color: #ffffffcc;
-            margin: 0;
-            border-bottom: 2px solid #ccc;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .team {
-            margin: 40px auto 20px;
-            background: linear-gradient(to top left, #ffffff, #f5f9ff);
-            padding: 30px 40px;
-            border-radius: 16px;
-            max-width: 600px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease;
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            animation: pulse 2s infinite;
         }
 
-        .team:hover {
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .team-info {
+            font-size: 0.9em;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .stop-btn {
+            background: linear-gradient(45deg, #f44336, #da190b);
+            color: white;
+        }
+
+        .clear-btn {
+            background: linear-gradient(45deg, #FF9800, #f57c00);
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 400px 350px 450px;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .chart-container:hover {
             transform: translateY(-5px);
         }
 
-        .team h3 {
-            font-size: 1.5rem;
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: 600;
             margin-bottom: 15px;
-            color: #1e2e50;
+            color: #333;
             text-align: center;
-        }
-
-        .team ul {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .team li {
-            padding: 8px 0;
-            font-size: 1.1rem;
-            border-bottom: 1px solid #ddd;
-            color: #2c3e50;
-        }
-
-        .team li:last-child {
-            border-bottom: none;
-        }
-
-        .visualizations {
-            margin: 40px auto;
-            max-width: 900px;
-            text-align: center;
-        }
-
-        .chart-buttons {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 25px;
-        }
-
-        .chart-buttons button {
-            padding: 10px 16px;
-            font-size: 1rem;
-            border: none;
-            border-radius: 8px;
-            background: #1f3a93;
-            color: white;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .chart-buttons button:hover {
-            background: #3c5fac;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
         }
 
         .chart-description {
-            margin-top: 15px;
             text-align: center;
-            font-style: italic;
-            color: #555;
-            padding: 0 20px;
-        }
-
-        .chart {
-            margin-top: 20px;
-        }
-
-        .stream-container {
-            margin-top: 40px;
-            text-align: center;
-        }
-
-        .log {
-            max-height: 200px;
-            overflow-y: auto;
+            color: #666;
             font-size: 0.9em;
-            text-align: left;
-            margin: 30px auto;
-            background-color: #fafafa;
-            padding: 15px;
-            border-radius: 10px;
-            max-width: 800px;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
         }
 
-        @media (max-width: 600px) {
-            .team {
-                padding: 20px;
-            }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
 
-            h1 {
-                font-size: 2rem;
-            }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
 
-            .team h3 {
-                font-size: 1.2rem;
-            }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
 
-            .team li {
-                font-size: 1rem;
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .line {
+            fill: none;
+            stroke: #667eea;
+            stroke-width: 3;
+            filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.3));
+        }
+
+        .area {
+            fill: url(#gradient);
+            opacity: 0.7;
+        }
+
+        .axis {
+            color: #666;
+        }
+
+        .axis text {
+            font-size: 11px;
+        }
+
+        .grid line {
+            stroke: rgba(102, 126, 234, 0.2);
+            stroke-dasharray: 2,2;
+        }
+
+        .grid path {
+            stroke-width: 0;
+        }
+
+        .bar {
+            fill: #667eea;
+            transition: fill 0.3s ease;
+        }
+
+        .bar:hover {
+            fill: #764ba2;
+        }
+
+        .wiki-label {
+            font-size: 11px;
+            fill: #666;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .connected {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(3, 350px);
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
             }
         }
     </style>
 </head>
 <body>
-
-    <h1>Activity A07 - D3.js Reports Stream Data</h1>
-
-    <div class="team">
-        <h3>Team Members</h3>
-        <ul>
-            <li>Diego Monroy Minero</li>
-            <li>Alan Alberto Valbuena Novelo</li>
-            <li>Ariel Joel Buenfil Gongora</li>
-            <li>Damaris Yuselin Dzul Uc</li>
-            <li>Sergio Johanan Barrera Chan</li>
-        </ul>
-    </div>
-
-    <div class="visualizations">
-        <div class="chart-buttons">
-            <button onclick="setChart('wikis')">🌍 Wiki Activity</button>
-            <button onclick="setChart('titles')">📊 Top Edited Articles</button>
-            <button onclick="setChart('bytes')">📈 Byte Change Histogram</button>
+    <div class="connection-status" id="connectionStatus">Desconectado</div>
+    
+    <div class="header">
+        <h1>WikiStream Analytics</h1>
+        <div class="subtitle">Visualización en Tiempo Real de Ediciones de Wikipedia</div>
+        <div class="team-info">
+            <strong>Equipo:</strong> Sergio Barrera • Ariel Buenfil • Damaris Dzul • Diego Monroy • Alan Valbuena
         </div>
-
-        <div class="chart-description" id="chart-description">
-            <!-- Descripción dinámica del gráfico -->
+        
+        <div class="controls">
+            <button class="start-btn" onclick="startStream()">🔴 Iniciar Stream</button>
+            <button class="stop-btn" onclick="stopStream()">⏹️ Detener Stream</button>
+            <button class="clear-btn" onclick="clearData()">🗑️ Limpiar Datos</button>
         </div>
-
-        <div id="chart" class="chart"></div>
     </div>
 
-
-    <div class="stream-container" id="stream-container" style="display: none;">
-        <h3>Live Edit Stream</h3>
-        <div id="log" class="log"></div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="totalEdits">0</div>
+            <div class="stat-label">Total Ediciones</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="editsPerMinute">0</div>
+            <div class="stat-label">Ediciones/Minuto</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="uniqueWikis">0</div>
+            <div class="stat-label">Wikis Activas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="avgBytes">0</div>
+            <div class="stat-label">Bytes Promedio</div>
+        </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/d3_script.js') }}"></script>
+    <div class="dashboard">
+        <div class="chart-container">
+            <div class="chart-title">📈 Actividad de Ediciones cada 5 Segundos</div>
+            <div id="timeChart"></div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">🌍 Top Wikis Más Activas</div>
+            <div id="wikiChart"></div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">📊 Distribución de Cambios de Bytes</div>
+            <div class="chart-description">
+                Muestra si las ediciones agregan contenido (+) o eliminan contenido (-)
+            </div>
+            <div id="bytesChart"></div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Variables globales
+        let eventSource;
+        let isStreaming = false;
+        let editsData = [];
+        let wikiStats = new Map();
+        let bytesData = [];
+        let totalEdits = 0;
+        let startTime = Date.now();
+
+        // Configuración de dimensiones
+        const margin = {top: 20, right: 30, bottom: 60, left: 60};
+        
+        // Funciones de utilidad
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            status.textContent = connected ? 'Conectado' : 'Desconectado';
+            status.className = `connection-status ${connected ? 'connected' : 'disconnected'}`;
+        }
+
+        function updateStats() {
+            document.getElementById('totalEdits').textContent = totalEdits.toLocaleString();
+            
+            const minutesElapsed = (Date.now() - startTime) / (1000 * 60);
+            const editsPerMinute = minutesElapsed > 0 ? Math.round(totalEdits / minutesElapsed) : 0;
+            document.getElementById('editsPerMinute').textContent = editsPerMinute;
+            
+            document.getElementById('uniqueWikis').textContent = wikiStats.size;
+            
+            const avgBytes = bytesData.length > 0 ? 
+                Math.round(bytesData.reduce((sum, d) => sum + d.bytes, 0) / bytesData.length) : 0;
+            document.getElementById('avgBytes').textContent = avgBytes;
+        }
+
+        // Configuración de gráficos
+        function setupTimeChart() {
+            const container = d3.select("#timeChart");
+            container.selectAll("*").remove();
+            
+            const containerRect = container.node().getBoundingClientRect();
+            const width = containerRect.width - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const svg = container.append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom);
+
+            // Definir gradiente
+            const defs = svg.append("defs");
+            const gradient = defs.append("linearGradient")
+                .attr("id", "gradient")
+                .attr("gradientUnits", "userSpaceOnUse")
+                .attr("x1", 0).attr("y1", height)
+                .attr("x2", 0).attr("y2", 0);
+            
+            gradient.append("stop")
+                .attr("offset", "0%")
+                .attr("stop-color", "#667eea")
+                .attr("stop-opacity", 0.1);
+            
+            gradient.append("stop")
+                .attr("offset", "100%")
+                .attr("stop-color", "#667eea")
+                .attr("stop-opacity", 0.8);
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            window.timeChart = { svg, g, width, height };
+        }
+
+        function setupWikiChart() {
+            const container = d3.select("#wikiChart");
+            container.selectAll("*").remove();
+            
+            const containerRect = container.node().getBoundingClientRect();
+            const width = containerRect.width - 40;
+            const height = 250;
+
+            const svg = container.append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            window.wikiChart = { svg, width, height };
+        }
+
+        function setupBytesChart() {
+            const container = d3.select("#bytesChart");
+            container.selectAll("*").remove();
+            
+            const containerRect = container.node().getBoundingClientRect();
+            const width = containerRect.width - margin.left - margin.right;
+            const height = 320 - margin.top - margin.bottom;
+
+            const svg = container.append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom);
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            window.bytesChart = { svg, g, width, height };
+        }
+
+        // Funciones de actualización de gráficos
+        function updateTimeChart() {
+            if (!window.timeChart || editsData.length === 0) return;
+
+            const { g, width, height } = window.timeChart;
+            
+            // Agrupar datos cada 5 segundos
+            const fiveSecondData = d3.rollup(editsData, 
+                v => v.length, 
+                d => {
+                    const time = d.time;
+                    const seconds = Math.floor(time.getSeconds() / 5) * 5;
+                    return new Date(time.getFullYear(), time.getMonth(), time.getDate(), 
+                                   time.getHours(), time.getMinutes(), seconds);
+                }
+            );
+            
+            const data = Array.from(fiveSecondData, ([key, value]) => ({ time: key, count: value }))
+                .sort((a, b) => a.time - b.time)
+                .slice(-60); // Mostrar últimos 60 intervalos (5 minutos)
+
+            if (data.length === 0) return;
+
+            // Si solo hay un punto de datos, agregar uno anterior ficticio
+            if (data.length === 1) {
+                data.unshift({
+                    time: new Date(data[0].time.getTime() - 5000), // 5 segundos antes
+                    count: 0
+                });
+            }
+
+            const xScale = d3.scaleTime()
+                .domain(d3.extent(data, d => d.time))
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.count) || 1])
+                .range([height, 0]);
+
+            const line = d3.line()
+                .x(d => xScale(d.time))
+                .y(d => yScale(d.count))
+                .curve(d3.curveMonotoneX);
+
+            const area = d3.area()
+                .x(d => xScale(d.time))
+                .y0(height)
+                .y1(d => yScale(d.count))
+                .curve(d3.curveMonotoneX);
+
+            // Limpiar gráfico anterior
+            g.selectAll("*").remove();
+
+            // Agregar grid
+            g.append("g")
+                .attr("class", "grid")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale)
+                    .tickSize(-height)
+                    .tickFormat("")
+                );
+
+            // Agregar área
+            g.append("path")
+                .datum(data)
+                .attr("class", "area")
+                .attr("d", area);
+
+            // Agregar línea
+            g.append("path")
+                .datum(data)
+                .attr("class", "line")
+                .attr("d", line);
+
+            // Agregar puntos en la línea
+            g.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", d => xScale(d.time))
+                .attr("cy", d => yScale(d.count))
+                .attr("r", 3)
+                .style("fill", "#667eea")
+                .style("stroke", "white")
+                .style("stroke-width", 2);
+
+            // Agregar ejes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).tickFormat(d3.timeFormat("%H:%M:%S")));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+        }
+
+        function updateWikiChart() {
+            if (!window.wikiChart || wikiStats.size === 0) return;
+
+            const { svg, width, height } = window.wikiChart;
+            
+            const topWikis = Array.from(wikiStats.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 12)
+                .map(([wiki, count]) => ({ wiki: wiki.replace('.wikipedia.org', ''), count }));
+
+            const xScale = d3.scaleBand()
+                .domain(topWikis.map(d => d.wiki))
+                .range([30, width - 30])
+                .padding(0.15);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(topWikis, d => d.count)])
+                .range([height - 50, 20]);
+
+            svg.selectAll("*").remove();
+
+            const bars = svg.selectAll(".bar")
+                .data(topWikis)
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", d => xScale(d.wiki))
+                .attr("width", xScale.bandwidth())
+                .attr("y", d => yScale(d.count))
+                .attr("height", d => height - 50 - yScale(d.count))
+                .attr("rx", 4);
+
+            // Etiquetas de wikis con rotación
+            svg.selectAll(".wiki-label")
+                .data(topWikis)
+                .enter().append("text")
+                .attr("class", "wiki-label")
+                .attr("x", d => xScale(d.wiki) + xScale.bandwidth() / 2)
+                .attr("y", height - 30)
+                .attr("text-anchor", "middle")
+                .attr("transform", d => `rotate(-20, ${xScale(d.wiki) + xScale.bandwidth() / 2}, ${height - 30})`)
+                .style("font-size", "10px")
+                .text(d => d.wiki);
+
+            // Agregar valores en las barras
+            svg.selectAll(".bar-value")
+                .data(topWikis)
+                .enter().append("text")
+                .attr("class", "bar-value")
+                .attr("x", d => xScale(d.wiki) + xScale.bandwidth() / 2)
+                .attr("y", d => yScale(d.count) - 5)
+                .attr("text-anchor", "middle")
+                .style("font-size", "11px")
+                .style("fill", "#333")
+                .style("font-weight", "bold")
+                .text(d => d.count);
+        }
+
+        function updateBytesChart() {
+            if (!window.bytesChart || bytesData.length === 0) return;
+
+            const { g, width, height } = window.bytesChart;
+            
+            // Categorizar los cambios con mejor distribución
+            const categories = [
+                { name: 'Gran eliminación\n(< -500)', min: -Infinity, max: -500, color: '#dc2626' },
+                { name: 'Eliminación media\n(-500 a -100)', min: -500, max: -100, color: '#ea580c' },
+                { name: 'Eliminación pequeña\n(-100 a 0)', min: -100, max: 0, color: '#f59e0b' },
+                { name: 'Pequeña adición\n(0 a 100)', min: 0, max: 100, color: '#22c55e' },
+                { name: 'Adición media\n(100 a 500)', min: 100, max: 500, color: '#3b82f6' },
+                { name: 'Gran adición\n(> 500)', min: 500, max: Infinity, color: '#8b5cf6' }
+            ];
+
+            const data = categories.map(cat => ({
+                category: cat.name,
+                count: bytesData.filter(d => {
+                    if (cat.min === -Infinity) return d.bytes < cat.max;
+                    if (cat.max === Infinity) return d.bytes > cat.min;
+                    return d.bytes >= cat.min && d.bytes < cat.max;
+                }).length,
+                color: cat.color
+            })).filter(d => d.count > 0);
+
+            if (data.length === 0) return;
+
+            const xScale = d3.scaleBand()
+                .domain(data.map(d => d.category))
+                .range([0, width])
+                .padding(0.2);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.count) || 1])
+                .range([height, 0]);
+
+            g.selectAll("*").remove();
+
+            // Grid horizontal
+            g.append("g")
+                .attr("class", "grid")
+                .call(d3.axisLeft(yScale)
+                    .tickSize(-width)
+                    .tickFormat("")
+                );
+
+            // Barras con colores diferentes
+            g.selectAll(".category-bar")
+                .data(data)
+                .enter().append("rect")
+                .attr("class", "category-bar")
+                .attr("x", d => xScale(d.category))
+                .attr("width", xScale.bandwidth())
+                .attr("y", d => yScale(d.count))
+                .attr("height", d => height - yScale(d.count))
+                .style("fill", d => d.color)
+                .style("opacity", 0.8)
+                .attr("rx", 4)
+                .on("mouseover", function(event, d) {
+                    d3.select(this).style("opacity", 1);
+                })
+                .on("mouseout", function(event, d) {
+                    d3.select(this).style("opacity", 0.8);
+                });
+
+            // Valores en las barras
+            g.selectAll(".category-value")
+                .data(data)
+                .enter().append("text")
+                .attr("class", "category-value")
+                .attr("x", d => xScale(d.category) + xScale.bandwidth() / 2)
+                .attr("y", d => yScale(d.count) - 8)
+                .attr("text-anchor", "middle")
+                .style("font-size", "12px")
+                .style("fill", "#333")
+                .style("font-weight", "bold")
+                .text(d => d.count);
+
+            // Etiquetas del eje X
+            const textElements = g.selectAll(".category-label")
+                .data(data)
+                .enter().append("text")
+                .attr("class", "category-label")
+                .attr("x", d => xScale(d.category) + xScale.bandwidth() / 2)
+                .attr("y", height + 20)
+                .attr("text-anchor", "middle")
+                .style("font-size", "10px")
+                .style("fill", "#666");
+
+            // Dividir texto en múltiples líneas
+            textElements.each(function(d) {
+                const text = d3.select(this);
+                const lines = d.category.split('\n');
+                text.text('');
+                lines.forEach((line, i) => {
+                    text.append('tspan')
+                        .attr('x', xScale(d.category) + xScale.bandwidth() / 2)
+                        .attr('dy', i === 0 ? 0 : '1.2em')
+                        .text(line);
+                });
+            });
+
+            // Eje Y
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Título del eje Y
+            g.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left + 10)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .style("font-size", "12px")
+                .style("fill", "#666")
+                .text("Número de Ediciones");
+        }
+
+        // Funciones de datos
+        function processEdit(change) {
+            totalEdits++;
+            
+            const editData = {
+                time: new Date(change.timestamp * 1000),
+                wiki: change.wiki,
+                title: change.title,
+                user: change.user,
+                bytes: (change.length && change.length.new && change.length.old) ? 
+                       change.length.new - change.length.old : 0
+            };
+
+            editsData.push(editData);
+            if (editsData.length > 3000) {
+                editsData = editsData.slice(-2000);
+            }
+
+            // Actualizar estadísticas de wikis
+            if (wikiStats.has(change.wiki)) {
+                wikiStats.set(change.wiki, wikiStats.get(change.wiki) + 1);
+            } else {
+                wikiStats.set(change.wiki, 1);
+            }
+
+            // Agregar a datos de bytes solo si hay cambio significativo
+            if (editData.bytes !== 0) {
+                bytesData.push(editData);
+                if (bytesData.length > 1500) {
+                    bytesData = bytesData.slice(-1000);
+                }
+            }
+
+            updateStats();
+            updateTimeChart();
+            updateWikiChart();
+            updateBytesChart();
+        }
+
+        // Funciones de control
+        function startStream() {
+            if (isStreaming) return;
+            
+            isStreaming = true;
+            startTime = Date.now();
+            
+            eventSource = new EventSource('https://stream.wikimedia.org/v2/stream/recentchange');
+            
+            eventSource.onopen = function() {
+                updateConnectionStatus(true);
+                document.querySelector('.start-btn').style.opacity = '0.5';
+                document.querySelector('.stop-btn').style.opacity = '1';
+            };
+
+            eventSource.onmessage = function(event) {
+                try {
+                    const change = JSON.parse(event.data);
+                    if (change.type === 'edit' && change.wiki && change.title) {
+                        processEdit(change);
+                    }
+                } catch (error) {
+                    console.error('Error parsing data:', error);
+                }
+            };
+
+            eventSource.onerror = function() {
+                updateConnectionStatus(false);
+            };
+        }
+
+        function stopStream() {
+            if (!isStreaming) return;
+            
+            isStreaming = false;
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            updateConnectionStatus(false);
+            document.querySelector('.start-btn').style.opacity = '1';
+            document.querySelector('.stop-btn').style.opacity = '0.5';
+        }
+
+        function clearData() {
+            stopStream();
+            
+            editsData = [];
+            wikiStats.clear();
+            bytesData = [];
+            totalEdits = 0;
+            
+            // Limpiar todos los gráficos
+            d3.selectAll("svg").selectAll("*").remove();
+            
+            // Resetear estadísticas
+            document.getElementById('totalEdits').textContent = '0';
+            document.getElementById('editsPerMinute').textContent = '0';
+            document.getElementById('uniqueWikis').textContent = '0';
+            document.getElementById('avgBytes').textContent = '0';
+            
+            // Reinicializar gráficos
+            initializeCharts();
+        }
+
+        // Inicialización
+        function initializeCharts() {
+            setupTimeChart();
+            setupWikiChart();
+            setupBytesChart();
+        }
+
+        function handleResize() {
+            initializeCharts();
+            if (editsData.length > 0) {
+                updateTimeChart();
+                updateWikiChart();
+                updateBytesChart();
+            }
+        }
+
+        // Event listeners
+        window.addEventListener('load', () => {
+            initializeCharts();
+            updateConnectionStatus(false);
+            document.querySelector('.stop-btn').style.opacity = '0.5';
+        });
+
+        window.addEventListener('resize', handleResize);
+    </script>
 </body>
 </html>
