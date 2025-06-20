@@ -130,13 +130,6 @@
             padding-bottom: 10px;
         }
 
-        .chart-description {
-            text-align: center;
-            color: #666;
-            font-size: 0.9em;
-            margin-bottom: 15px;
-        }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -261,6 +254,23 @@
                 align-items: center;
             }
         }
+
+        .chart-description {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            padding: 10px 20px;
+            line-height: 1.4;
+        }
+
+        .chart-wrapper {
+            width: 100%;
+            height: 100%;
+        }
+
+
     </style>
 </head>
 <body>
@@ -268,56 +278,72 @@
     
     <div class="header">
         <h1>WikiStream Analytics</h1>
-        <div class="subtitle">Visualización en Tiempo Real de Ediciones de Wikipedia</div>
+        <div class="subtitle">Real-Time Visualization of Wikipedia Edits</div>
         <div class="team-info">
-            <strong>Equipo:</strong> Sergio Barrera • Ariel Buenfil • Damaris Dzul • Diego Monroy • Alan Valbuena
+            <strong>Team:</strong> Sergio Barrera • Ariel Buenfil • Damaris Dzul • Diego Monroy • Alan Valbuena
         </div>
-        
+
         <div class="controls">
-            <button class="start-btn" onclick="startStream()">🔴 Iniciar Stream</button>
-            <button class="stop-btn" onclick="stopStream()">⏹️ Detener Stream</button>
-            <button class="clear-btn" onclick="clearData()">🗑️ Limpiar Datos</button>
+            <button class="start-btn" onclick="startStream()">🔴 Start Stream</button>
+            <button class="stop-btn" onclick="stopStream()">⏹️ Stop Stream</button>
+            <button class="clear-btn" onclick="clearData()">🗑️ Clear Data</button>
         </div>
     </div>
 
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-value" id="totalEdits">0</div>
-            <div class="stat-label">Total Ediciones</div>
+            <div class="stat-label">Total Edits</div>
         </div>
         <div class="stat-card">
             <div class="stat-value" id="editsPerMinute">0</div>
-            <div class="stat-label">Ediciones/Minuto</div>
+            <div class="stat-label">Edits/Minute</div>
         </div>
         <div class="stat-card">
             <div class="stat-value" id="uniqueWikis">0</div>
-            <div class="stat-label">Wikis Activas</div>
+            <div class="stat-label">Active Wikis</div>
         </div>
         <div class="stat-card">
             <div class="stat-value" id="avgBytes">0</div>
-            <div class="stat-label">Bytes Promedio</div>
+            <div class="stat-label">Average Bytes</div>
         </div>
     </div>
 
     <div class="dashboard">
-        <div class="chart-container">
-            <div class="chart-title">📈 Actividad de Ediciones cada 5 Segundos</div>
+    <!-- Chart 1 -->
+    <div class="chart-container">
+        <div class="chart-title">📈 Edit Activity Every 5 Seconds</div>
+        <div class="chart-description">
+            Displays the number of edits grouped into 5-second intervals, revealing real-time activity peaks.
+        </div>
+        <div class="chart-wrapper">
             <div id="timeChart"></div>
         </div>
-        
-        <div class="chart-container">
-            <div class="chart-title">🌍 Top Wikis Más Activas</div>
+    </div>
+
+    <!-- Chart 2 -->
+    <div class="chart-container">
+        <div class="chart-title">🌍 Most Active Wikis</div>
+        <div class="chart-description">
+            Shows the top language-specific Wikipedias with the most edits during the session.
+        </div>
+        <div class="chart-wrapper">
             <div id="wikiChart"></div>
         </div>
-        
-        <div class="chart-container">
-            <div class="chart-title">📊 Distribución de Cambios de Bytes</div>
-            <div class="chart-description">
-                Muestra si las ediciones agregan contenido (+) o eliminan contenido (-)
-            </div>
+    </div>
+
+    <!-- Chart 3 -->
+    <div class="chart-container">
+        <div class="chart-title">📊 Byte Change Distribution</div>
+        <div class="chart-description">
+            Categorizes each edit by the number of bytes added or removed, distinguishing minor and major changes.
+        </div>
+        <div class="chart-wrapper">
             <div id="bytesChart"></div>
         </div>
     </div>
+</div>
+
 
     <div class="tooltip" id="tooltip"></div>
 
