@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Activity A07 - D3.js Reports Stream Data</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom right, #f0f0f0, #dfefff);
+            color: #333;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            text-align: center;
+            padding: 40px 20px 10px;
+            color: #1f3a93;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            background-color: #ffffffcc;
+            margin: 0;
+            border-bottom: 2px solid #ccc;
+        }
+
+        .team {
+            margin: 40px auto 20px;
+            background: linear-gradient(to top left, #ffffff, #f5f9ff);
+            padding: 30px 40px;
+            border-radius: 16px;
+            max-width: 600px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .team:hover {
+            transform: translateY(-5px);
+        }
+
+        .team h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #1e2e50;
+            text-align: center;
+        }
+
+        .team ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .team li {
+            padding: 8px 0;
+            font-size: 1.1rem;
+            border-bottom: 1px solid #ddd;
+            color: #2c3e50;
+        }
+
+        .team li:last-child {
+            border-bottom: none;
+        }
+
+        .visualizations {
+            margin: 40px auto;
+            max-width: 900px;
+            text-align: center;
+        }
+
+        .chart-buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .chart-buttons button {
+            padding: 10px 16px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            background: #1f3a93;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .chart-buttons button:hover {
+            background: #3c5fac;
+        }
+
+        .chart-description {
+            margin-top: 15px;
+            text-align: center;
+            font-style: italic;
+            color: #555;
+            padding: 0 20px;
+        }
+
+        .chart {
+            margin-top: 20px;
+        }
+
+        .stream-container {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .log {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.9em;
+            text-align: left;
+            margin: 30px auto;
+            background-color: #fafafa;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 800px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        @media (max-width: 600px) {
+            .team {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .team h3 {
+                font-size: 1.2rem;
+            }
+
+            .team li {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Activity A07 - D3.js Reports Stream Data</h1>
+
+    <div class="team">
+        <h3>Team Members</h3>
+        <ul>
+            <li>Diego Monroy Minero</li>
+            <li>Alan Alberto Valbuena Novelo</li>
+            <li>Ariel Joel Buenfil Gongora</li>
+            <li>Damaris Yuselin Dzul Uc</li>
+            <li>Sergio Johanan Barrera Chan</li>
+        </ul>
+    </div>
+
+    <div class="visualizations">
+        <div class="chart-buttons">
+            <button onclick="setChart('titles')">📊 Top Edited Articles</button>
+            <button onclick="setChart('bytes')">📈 Byte Change Histogram</button>
+            <button onclick="setChart('wikis')">🌍 Wiki Activity</button>
+        </div>
+
+        <div class="chart-description" id="chart-description">
+            <!-- Descripción dinámica del gráfico -->
+        </div>
+
+        <div id="chart" class="chart"></div>
+    </div>
+
+    <div class="stream-container" id="stream-container" style="display: none;">
+        <h3>Live Edit Stream</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/d3_script.js') }}"></script>
+</body>
+</html>
