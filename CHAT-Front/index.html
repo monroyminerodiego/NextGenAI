@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flami Chat - Tu Asistente IA</title>
+    
+    <!--=============== GOOGLE FONTS ===============-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+
+    <!--=============== TABLERICONS ===============-->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" as="style">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    
+    <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="flamingo-icon">🦩</div>
+                    <h1>Flami</h1>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <button class="new-chat-btn" id="newChatBtn">
+                    <i class="ti ti-plus"></i>
+                    Nueva conversación
+                </button>
+                
+                <div class="chat-history">
+                    <h3>Conversaciones recientes</h3>
+                    <div class="chat-list" id="chatList">
+                        <!-- Las conversaciones se cargarán aquí -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="storage-info">
+                    <i class="ti ti-database"></i>
+                    <span id="storageInfo">0/10 conversaciones</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <div class="chat-header">
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <div class="chat-title">
+                    <div class="flamingo-icon">🦩</div>
+                    <h2>Flami Chat</h2>
+                </div>
+                <div class="header-actions">
+                    <button class="clear-chat-btn" id="clearChatBtn" title="Limpiar conversación">
+                        <i class="ti ti-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="welcome-message" id="welcomeMessage">
+                    <div class="welcome-content">
+                        <div class="flamingo-large">🦩</div>
+                        <h2>¡Hola! Soy Flami</h2>
+                        <p>Tu asistente IA personal. ¿En qué puedo ayudarte hoy?</p>
+                    </div>
+                </div>
+                
+                <div class="messages" id="messages">
+                    <!-- Los mensajes aparecerán aquí -->
+                </div>
+            </div>
+
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Escribe tu mensaje aquí..." 
+                        rows="1"
+                        maxlength="4000"
+                    ></textarea>
+                    <button id="sendBtn" class="send-btn" disabled>
+                        <i class="ti ti-send"></i>
+                    </button>
+                </div>
+                <div class="input-info">
+                    <span class="char-count" id="charCount">0/4000</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de advertencia -->
+    <div class="modal" id="warningModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Mensaje muy extenso</h3>
+                <button class="modal-close" id="modalClose">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Tu mensaje excede el límite de caracteres permitido. Por favor, reduce la longitud de tu mensaje para continuar.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="modalOk">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/js/script.js"></script>
+</body>
+</html>
