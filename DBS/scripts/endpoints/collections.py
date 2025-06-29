@@ -52,7 +52,6 @@ class EndpointCollecciones:
                 detail={"status": "error", "mensaje": str(ex)}
             )
                 
-
     @staticmethod
     @router.get("/collections")
     async def obtener_coleccion(nombre: Optional[str] = Query(None, description="Nombre de la colección")):
