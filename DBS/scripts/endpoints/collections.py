@@ -51,7 +51,6 @@ class EndpointCollecciones:
                 status_code=500,
                 detail={"status": "error", "mensaje": str(ex)}
             )
-                
 
     @staticmethod
     @router.get("/collections")
