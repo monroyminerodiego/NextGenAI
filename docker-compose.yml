@@ -1,0 +1,32 @@
+services:
+  mongodb:
+    image: mongo
+    container_name: mongo_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - internal_net
+
+  dbs:
+    build:
+      context: ./DBS
+    container_name: dbs_service
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+    environment:
+      - DATABASE_URL=mongodb://mongo_db:27017
+    networks:
+      - internal_net
+    volumes:
+      - ./DBS:/app
+
+volumes:
+  mongo_data:
+
+networks:
+  internal_net:
+    driver: bridge
