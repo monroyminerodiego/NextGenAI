@@ -5,6 +5,7 @@ from bson import ObjectId
 from ..db import mongo_db
 from ..schemas.collections import DocumentoEntrada, DocumentoUpdate, DocumentoDelete
 from ..vectorizer import embed_text
+from ..vector_db import get_vector_collection
 
 router = APIRouter()
 
@@ -15,37 +16,54 @@ class EndpointCollecciones:
     async def crear_coleccion(data: DocumentoEntrada):
         try:
             coleccion = mongo_db[data.nombre_colleccion]
-            ids = []                
+            ids = []
 
-            # ===== Guardar documentos
+            # Obtener colección en la base vectorial (ChromaDB)
+            vector_collection = get_vector_collection(data.nombre_colleccion)
+
+            # ===== Guardar múltiples documentos
             if data.documentos:
                 insert_result = await coleccion.insert_many(data.documentos)
-                for doc_id in insert_result.inserted_ids: ids.append(str(doc_id))
+                inserted_ids = insert_result.inserted_ids
 
-                # for i, doc in enumerate(data.documentos):
-                #     texto = doc.get("contenido") or doc.get("texto")
-                #     if texto:
-                #         embedding = embed_text(texto)
-                #         print(f"[{i+1}] Embedding generado para '{texto[:30]}...': {embedding[:5]}")
+                docs_a_vectorizar = []
+                ids_a_vectorizar = []
+                metas_a_vectorizar = []
+
+                for i, doc in enumerate(data.documentos):
+                    doc_id = str(inserted_ids[i])
+                    ids.append(doc_id)
+
+                    texto = doc.get("contenido") or doc.get("texto")
+                    if texto:
+                        docs_a_vectorizar.append(texto)
+                        ids_a_vectorizar.append(doc_id)
+                        metas_a_vectorizar.append({"mongo_id": doc_id})
+
+                # Vectorización en batch
+                if docs_a_vectorizar:
+                    embeddings = [embed_text(t) for t in docs_a_vectorizar]
+                    vector_collection.add(
+                        ids=ids_a_vectorizar,
+                        documents=docs_a_vectorizar,
+                        metadatas=metas_a_vectorizar
+                    )
 
             # ===== Confirmación
             if len(ids) > 0:
                 response = {
                     "status": "creado!",
-                    "mensaje": f"{len(ids)} documentos insertados",
+                    "mensaje": f"{len(ids)} documentos insertados y vectorizados",
                     "ids": ids
                 }
             else:
                 response = {
                     "status": "nothing happened!",
-                    "mensaje": f"No se encontró un 'documento' o 'documentos' para guardar en la collección"
+                    "mensaje": "No se encontró 'documentos' para guardar en la colección"
                 }
-            
-            return JSONResponse(
-                status_code = 201,
-                content     = response
-            )
-        # ===== Manejo de errores generales
+
+            return JSONResponse(status_code=201, content=response)
+
         except Exception as ex:
             raise HTTPException(
                 status_code=500,
@@ -92,14 +110,17 @@ class EndpointCollecciones:
     async def editar_coleccion(data: DocumentoUpdate):
         try:
             coleccion = mongo_db[data.nombre_colleccion]
+            vector_collection = get_vector_collection(data.nombre_colleccion)
             actualizados = []
 
             for i, doc in enumerate(data.actualizaciones):
-                if "_id" not in doc: continue
+                if "_id" not in doc:
+                    continue  # Saltar si no hay ID
 
                 str_id = doc["_id"]
                 del doc["_id"]
 
+                # Actualizar en Mongo
                 result = await coleccion.update_one(
                     {"_id": ObjectId(str_id)},
                     {"$set": doc}
@@ -108,11 +129,22 @@ class EndpointCollecciones:
                 if result.modified_count:
                     actualizados.append(str_id)
 
-                    # Opcional: revectorizar si se modifica el campo relevante
-                    # texto = doc.get("contenido") or doc.get("texto")
-                    # if texto:
-                    #     embedding = embed_text(texto)
-                    #     print(f"[{i+1}] Embedding actualizado para '{texto[:30]}...': {embedding[:5]}")
+                    # Si el contenido cambió, revectorizar
+                    texto = doc.get("contenido") or doc.get("texto")
+                    if texto:
+                        # 1. Eliminar vector viejo
+                        vector_collection.delete(ids=[str_id])
+                        
+                        # 2. Generar nuevo embedding
+                        embedding = embed_text(texto)
+                        
+                        # 3. Insertar nuevo embedding
+                        vector_collection.add(
+                            ids=[str_id],
+                            documents=[texto],
+                            metadatas=[{"mongo_id": str_id}]
+                        )
+                        print(f"[{i+1}] Embedding actualizado para '{texto[:30]}...'")
 
             return {
                 "status": "actualizado!",
@@ -134,6 +166,7 @@ class EndpointCollecciones:
     async def borrar_coleccion(data: DocumentoDelete):
         try:
             coleccion = mongo_db[data.nombre_colleccion]
+            vector_collection = get_vector_collection(data.nombre_colleccion)
             eliminados = []
 
             for str_id in data.ids:
@@ -141,8 +174,9 @@ class EndpointCollecciones:
                 if result.deleted_count == 1:
                     eliminados.append(str_id)
 
-                    # Opcional: si manejas embeddings en otra colección, podrías eliminarlos también
-                    # await mongo_db["embeddings"].delete_one({"doc_id": str_id})
+                    # Eliminar también el vector
+                    vector_collection.delete(ids=[str_id])
+                    print(f"[DELETE] Embedding eliminado para ID {str_id}")
 
             return {
                 "status": "eliminado!",
