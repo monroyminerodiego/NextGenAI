@@ -13,25 +13,31 @@ services:
     build:
       context: ./DBS
     container_name: database_nextgen
-    expose:
-      - "503"
+    # ===== PROD
+    # expose:
+    #   - "503"
+    # ===== DEV
+    ports:
+      - "503:503"
     depends_on:
       - mongo_nextgen
     networks:
       - nextgen_net
-      - proxy_net
+      # - proxy_net
     environment:
       - JWT_SECRET=${JWT_SECRET}
       - MONGO_URL=${MONGO_URL}
       - MONGO_DB=${MONGO_DB}
     volumes:
       - ./DBS:/app
+      - chroma_data:/app/chroma_db
 
 networks:
   nextgen_net:
     driver: bridge
-  proxy_net:
-    external: true
+  # proxy_net:
+  #   external: true
 
 volumes:
   mongo_data:
+  chroma_data:

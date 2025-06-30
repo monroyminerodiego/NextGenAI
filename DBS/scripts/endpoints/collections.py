@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Query, HTTPException
 from fastapi.responses import JSONResponse
-from typing import List, Optional
+from typing import Optional
 from bson import ObjectId
+
 from ..db import mongo_db
 from ..schemas.collections import DocumentoEntrada, DocumentoUpdate, DocumentoDelete
 from ..vectorizer import embed_text
@@ -22,6 +23,7 @@ class EndpointCollecciones:
             vector_collection = get_vector_collection(data.nombre_colleccion)
 
             # ===== Guardar múltiples documentos
+            embeddings = []
             if data.documentos:
                 insert_result = await coleccion.insert_many(data.documentos)
                 inserted_ids = insert_result.inserted_ids
@@ -35,6 +37,9 @@ class EndpointCollecciones:
                     ids.append(doc_id)
 
                     texto = doc.get("contenido") or doc.get("texto")
+                    if not texto:
+                        texto = " ".join([str(v) for v in doc.values()])
+
                     if texto:
                         docs_a_vectorizar.append(texto)
                         ids_a_vectorizar.append(doc_id)
@@ -54,7 +59,8 @@ class EndpointCollecciones:
                 response = {
                     "status": "creado!",
                     "mensaje": f"{len(ids)} documentos insertados y vectorizados",
-                    "ids": ids
+                    "ids": ids,
+                    "vectorizados": len(embeddings)
                 }
             else:
                 response = {
@@ -149,7 +155,8 @@ class EndpointCollecciones:
             return {
                 "status": "actualizado!",
                 "mensaje": f"{len(actualizados)} documentos actualizados",
-                "ids": actualizados
+                "ids": actualizados,
+                "embedding" : embedding
             }
 
         except Exception as ex:
