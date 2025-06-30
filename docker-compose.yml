@@ -1,32 +1,37 @@
 services:
-  mongodb:
-    image: mongo
-    container_name: mongo_db
-    ports:
-      - "27017:27017"
+  mongo_nextgen:
+    image: mongo:6.0
+    container_name: mongo_nextgen
+    expose:
+      - "27017"
     volumes:
       - mongo_data:/data/db
     networks:
-      - internal_net
+      - nextgen_net
 
-  dbs:
+  database_nextgen:
     build:
       context: ./DBS
-    container_name: dbs_service
-    ports:
-      - "8000:8000"
+    container_name: database_nextgen
+    expose:
+      - "503"
     depends_on:
-      - mongodb
-    environment:
-      - DATABASE_URL=mongodb://mongo_db:27017
+      - mongo_nextgen
     networks:
-      - internal_net
+      - nextgen_net
+      - proxy_net
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - MONGO_URL=${MONGO_URL}
+      - MONGO_DB=${MONGO_DB}
     volumes:
       - ./DBS:/app
 
+networks:
+  nextgen_net:
+    driver: bridge
+  proxy_net:
+    external: true
+
 volumes:
   mongo_data:
-
-networks:
-  internal_net:
-    driver: bridge

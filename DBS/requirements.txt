@@ -1,5 +1,6 @@
 fastapi
 uvicorn[standard]
 motor
-sentence-transformers
 python-dotenv
+chromadb
+sentence-transformers
