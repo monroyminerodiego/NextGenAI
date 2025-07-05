@@ -644,6 +644,196 @@ st.markdown("""
 </div>
 </div>
 """, unsafe_allow_html=True)
+# Visualization 6: Dendrogram for Employee Clustering
+st.markdown("""
+<div class="section-header">
+    <i class="ti ti-git-branch section-icon"></i>
+    <h2>Employee Hierarchical Clustering</h2>
+</div>
+""", unsafe_allow_html=True)
+
+# Prepare data for clustering
+from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.spatial.distance import pdist
+import numpy as np
+
+# Select numerical columns for clustering
+clustering_cols = ['edad', 'salario_anual', 'experiencia_anos', 'productividad_score', 
+                  'satisfaccion_laboral', 'horas_semanales']
+clustering_data = filtered_df[clustering_cols].fillna(filtered_df[clustering_cols].mean())
+
+# Normalize the data for better clustering
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+normalized_data = scaler.fit_transform(clustering_data)
+
+# Sample data for better visualization (reduce to 30 for cleaner display)
+if len(normalized_data) > 30:
+    sample_indices = np.random.choice(len(normalized_data), 30, replace=False)
+    sample_data = normalized_data[sample_indices]
+    sample_df = filtered_df.iloc[sample_indices].reset_index(drop=True)
+else:
+    sample_data = normalized_data
+    sample_df = filtered_df.reset_index(drop=True)
+
+# Perform hierarchical clustering
+linkage_matrix = linkage(sample_data, method='ward')
+
+# Calculate dendrogram for plotly
+from scipy.cluster.hierarchy import dendrogram as scipy_dendrogram
+dendro = scipy_dendrogram(linkage_matrix, 
+                         orientation='top',
+                         distance_sort='descending',
+                         show_leaf_counts=False,
+                         no_plot=True)
+
+# Create interactive dendrogram with Plotly
+fig6 = go.Figure()
+
+# Extract dendrogram data
+icoord = np.array(dendro['icoord'])
+dcoord = np.array(dendro['dcoord'])
+
+# Add dendrogram lines
+for i in range(len(icoord)):
+    fig6.add_trace(go.Scatter(
+        x=icoord[i], 
+        y=dcoord[i],
+        mode='lines',
+        line=dict(color='#06b6d4', width=2),
+        showlegend=False,
+        hoverinfo='none'
+    ))
+
+# Add interactive leaf nodes with employee information
+leaf_positions = []
+for i, label_idx in enumerate(dendro['leaves']):
+    x_pos = 10 * i + 5
+    y_pos = 0
+    
+    # Get employee data
+    emp_data = sample_df.iloc[label_idx]
+    
+    # Create simplified employee ID for display
+    emp_id = f"E{label_idx + 1:02d}"
+    
+    # Create detailed hover text
+    hover_text = f"""
+    <b>Employee {emp_id}</b><br>
+    <b>Department:</b> {emp_data.get('departamento', 'N/A')}<br>
+    <b>Age:</b> {emp_data.get('edad', 'N/A')} years<br>
+    <b>Annual Salary:</b> ${emp_data.get('salario_anual', 0):,.0f}<br>
+    <b>Experience:</b> {emp_data.get('experiencia_anos', 'N/A')} years<br>
+    <b>Productivity:</b> {emp_data.get('productividad_score', 'N/A')}/100<br>
+    <b>Job Satisfaction:</b> {emp_data.get('satisfaccion_laboral', 'N/A')}/10<br>
+    <b>Weekly Hours:</b> {emp_data.get('horas_semanales', 'N/A')} hrs<br>
+    <b>Education:</b> {emp_data.get('nivel_educacion', 'N/A')}<br>
+    <b>Work Mode:</b> {emp_data.get('modalidad_trabajo', 'N/A')}<br>
+    <b>Gender:</b> {emp_data.get('genero', 'N/A')}<br>
+    <b>Geographic Zone:</b> {emp_data.get('zona_geografica', 'N/A')}
+    """
+    
+    # Add interactive leaf node
+    fig6.add_trace(go.Scatter(
+        x=[x_pos],
+        y=[y_pos],
+        mode='markers',  # Removed text from here
+        marker=dict(
+            size=10,
+            color='#f59e0b',
+            symbol='circle',
+            line=dict(width=2, color='#06b6d4')
+        ),
+        hovertemplate=hover_text + "<extra></extra>",
+        showlegend=False,
+        name=f"Employee {emp_id}"
+    ))
+
+# Add cluster information nodes at branch points
+for i, (x_coords, y_coords) in enumerate(zip(icoord, dcoord)):
+    # Add hover info at branch merge points
+    merge_x = (x_coords[1] + x_coords[2]) / 2
+    merge_y = y_coords[1]
+    
+    if merge_y > 1:  # Only for significant branches
+        cluster_info = f"""
+        <b>Cluster Merge Point</b><br>
+        <b>Distance:</b> {merge_y:.2f}<br>
+        <b>Cluster Level:</b> {i + 1}<br>
+        <b>Similarity:</b> {((max(dcoord.flatten()) - merge_y) / max(dcoord.flatten()) * 100):.1f}%
+        """
+        
+        fig6.add_trace(go.Scatter(
+            x=[merge_x],
+            y=[merge_y],
+            mode='markers',
+            marker=dict(
+                size=8,
+                color='#8b5cf6',
+                symbol='diamond',
+                opacity=0.7
+            ),
+            hovertemplate=cluster_info + "<extra></extra>",
+            showlegend=False,
+            name=f"Cluster {i + 1}"
+        ))
+
+# Update layout
+fig6.update_layout(
+    height=700,
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    font_color='#f8fafc',
+    title=dict(
+        text='Interactive Employee Similarity Clustering',
+        font=dict(color='#f8fafc', size=18),
+        x=0.5
+    ),
+    xaxis=dict(
+        title='Employees (Hover over orange circles for details)',
+        showgrid=False,
+        zeroline=False,
+        showticklabels=False,
+        color='#f8fafc'
+    ),
+    yaxis=dict(
+        title='Distance (Lower = More Similar)',
+        showgrid=True,
+        gridcolor='rgba(255,255,255,0.1)',
+        zeroline=False,
+        color='#f8fafc'
+    ),
+    margin=dict(b=80, t=100, l=60, r=60),
+    hovermode='closest'
+)
+
+st.plotly_chart(fig6, use_container_width=True)
+
+# Add usage instructions
+st.markdown("""
+<div class="insight-box">
+    <div class="insight-title">📊 Chart Analysis</div>
+    <div class="insight-content">
+        This interactive hierarchical clustering dendrogram reveals natural groupings within the employee population based on key characteristics including age, salary, experience, productivity, satisfaction, and working hours. The tree structure shows how employees cluster together based on similarity, with branch height indicating the degree of difference between groups.
+    </div>
+</div>
+
+<div class="insight-box">
+    <div class="insight-title">🔍 Key Insights</div>
+    <div class="insight-content">
+        <ul>
+            <li><strong>Natural Segments:</strong> The branching pattern reveals distinct employee archetypes with similar characteristics</li>
+            <li><strong>Similarity Measurement:</strong> Lower branch points indicate employees with very similar profiles</li>
+            <li><strong>Organizational Structure:</strong> Clustering patterns may reflect informal organizational hierarchies or team compositions</li>
+            <li><strong>Talent Management:</strong> Similar employee groups can inform targeted development programs and career progression paths</li>
+            <li><strong>Compensation Equity:</strong> Employees in the same cluster should ideally have similar compensation structures</li>
+            <li><strong>Team Formation:</strong> Use clustering insights to create balanced, complementary team compositions</li>
+            <li><strong>Succession Planning:</strong> Identify employees with similar profiles for backup and succession strategies</li>
+        </ul>
+    </div>
+</div>
+</div>
+""", unsafe_allow_html=True)
 
 # Additional visualization: Geographic distribution
 if 'ciudad' in filtered_df.columns:
